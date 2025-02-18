@@ -1,5 +1,6 @@
-from machine import ADC, Pin
-import time
+from machine import Pin
+
+ADC_REFERENCE = 3.3
 
 class PowerSupply:
     SINK = 0
@@ -84,33 +85,3 @@ class PowerSupply:
 
     def high_z(self):
         self.connect(self.__polarity or PowerSupply.SINK, PowerSupply.HIGH_Z)
-
-status = Pin(25, Pin.OUT)
-
-probe_a = ADC(Pin(26))
-ps_a = PowerSupply(lo_z=Pin(4), hi_z=Pin(3))
-
-probe_b = ADC(Pin(27))
-ps_b = PowerSupply(lo_z=Pin(1), hi_z=Pin(2)) 
-
-probe_c = ADC(Pin(28))
-ps_c = PowerSupply(lo_z=Pin(0), hi_z=Pin(29))
-
-
-while True:
-    print("Sink")
-    ps_a.sink()
-    ps_b.sink()
-    ps_c.sink()
-    
-    status.value(1)
-    time.sleep(.5)
-
-    print("Source")
-    ps_a.source()
-    ps_b.source()
-    ps_c.source()
-    
-    status.value(0)
-    time.sleep(0.5)
-
