@@ -1,6 +1,6 @@
 from array import array
 from machine import ADC
-from power_supply import ADC_REFERENCE, PowerSupply
+from power_supply import ADC_REFERENCE, HI_Z_RESISTANCE, LO_Z_RESISTANCE, PowerSupply
 
 class Instrument:
     SAMPLE_COUNT = 10
@@ -43,14 +43,11 @@ def scan_voltage(a: Instrument, b: Instrument):
 
     return v
 
-def scan_diode(a: Instrument, b: Instrument):
-    a_to_b = scan_voltage(a, b)
-    b_to_a = scan_voltage(b, a)
-
-    if a_to_b > 0.5 and a_to_b < 3.0 and b_to_a > 3.0:
-        return (a, b, a_to_b)
+def scan_current(a: Instrument, r: float) -> float:
+    if not a.ps.is_connected:
+        return 0.0
     
-    if b_to_a > 0.5 and b_to_a < 3.0 and a_to_b > 3.0:
-        return (b, a, b_to_a)
+    if a.ps.is_low_z:
+        return (r - a.read()) / LO_Z_RESISTANCE
     
-    return None
+    return (r - a.read()) / HI_Z_RESISTANCE

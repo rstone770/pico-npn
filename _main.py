@@ -1,9 +1,12 @@
+from math import pi, sin, cos
+from diode import scan_diode
 import time
 from machine import ADC, I2C, Pin
-from gfx import draw_diode
+from gfx import draw_diode, draw_npn, draw_pnp
 from lib.ssd1306 import SSD1306_I2C
-from instrument import Instrument, scan_diode
-from power_supply import PowerSupply
+from instrument import Instrument, scan_current
+from power_supply import ADC_REFERENCE, PowerSupply
+from array import array
 
 DISPLAY_WIDTH = 128
 DISPLAY_HEIGHT = 64
@@ -39,6 +42,31 @@ def display_diode_info(a: Instrument, b: Instrument, vfd: float):
     display.text(f"Vfd = {vfd:.2f}V", 20, 45, 1)
     display.show()
 
+def scan_npn_hfe(base: Instrument, collector: Instrument, emitter: Instrument):
+    base.ps.disconnect()
+    collector.ps.disconnect()
+    emitter.ps.disconnect()
+
+    base.ps.connect(PowerSupply.SOURCE, PowerSupply.HIGH_Z)
+    collector.ps.connect(PowerSupply.SOURCE, PowerSupply.LOW_Z)
+    emitter.ps.connect(PowerSupply.SINK, PowerSupply.LOW_Z)
+
+    base_v = scan_current(base, ADC_REFERENCE)
+    collector_v = scan_current(collector, ADC_REFERENCE)
+    gain = collector_v / base_v
+
+    base.ps.disconnect()
+    collector.ps.disconnect()
+    emitter.ps.disconnect()
+
+    return gain
+
+def display_npn_info(base: Instrument, collector: Instrument, emitter: Instrument, hfe: float):
+    display.fill(0)
+    draw_npn(display, 0, 0, collector.id, base.id, emitter.id)
+    draw_pnp(display, 60, 0, collector.id, base.id, emitter.id)
+    # display.text(f"Hfe = {hfe:.2f}", 20, 45, 1)
+    display.show()
 
 scans = [
     scan_diode(probe_a, probe_b),
@@ -55,7 +83,13 @@ elif len(diodes) == 2:
     left, right = diodes
 
     if left[0] == right[0] and left[1] != right[1]:
-        display.text(f"NPN {left[0]} is connected to {right[1]}", 0, 0, 1)
+        hfe_lr = scan_npn_hfe(left[0], left[1], right[1])
+        hfe_rl = scan_npn_hfe(left[0], right[1], left[1])
+
+        if hfe_lr > hfe_rl:
+            display_npn_info(left[0], left[1], right[1], hfe_lr)
+        else:
+            display_npn_info(left[0], right[1], left[1], hfe_rl)
     elif left[0] != right[0] and left[1] == right[1]:
         display.text(f"PNP {left[0]} is connected to {right[1]}", 0, 0, 1)
 

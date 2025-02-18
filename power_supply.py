@@ -1,6 +1,8 @@
 from machine import Pin
 
 ADC_REFERENCE = 3.3
+LO_Z_RESISTANCE = 1_000
+HI_Z_RESISTANCE = 1_000_000
 
 class PowerSupply:
     SINK = 0
