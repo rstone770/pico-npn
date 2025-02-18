@@ -1,4 +1,3 @@
-from math import pi, sin, cos
 from diode import scan_diode
 import time
 from machine import ADC, I2C, Pin
@@ -92,35 +91,37 @@ def display_pnp_info(base: Instrument, collector: Instrument, emitter: Instrumen
     display.text(f"Vbe: {vbe:.2f}V", 55, 40, 1)
     display.show()
 
-scans = [
-    scan_diode(probe_a, probe_b),
-    scan_diode(probe_a, probe_c),
-    scan_diode(probe_b, probe_c)
-]
+while True:
+    scans = [
+        scan_diode(probe_a, probe_b),
+        scan_diode(probe_a, probe_c),
+        scan_diode(probe_b, probe_c)
+    ]
+    diodes = [diode for diode in scans if diode is not None]
+    
+    if len(diodes) == 1:
+        display_diode_info(diodes[0][0], diodes[0][1], diodes[0][2])
+    elif len(diodes) == 2:
+        left, right = diodes
 
-diodes = [diode for diode in scans if diode is not None]
-display.fill(0)
+        if left[0] == right[0] and left[1] != right[1]:
+            hfe_lr = scan_npn_hfe(left[0], left[1], right[1])
+            hfe_rl = scan_npn_hfe(left[0], right[1], left[1])
 
-if len(diodes) == 1:
-    display_diode_info(diodes[0][0], diodes[0][1], diodes[0][2])
-elif len(diodes) == 2:
-    left, right = diodes
+            if hfe_lr > hfe_rl:
+                display_npn_info(left[0], left[1], right[1], hfe_lr, left[2])
+            else:
+                display_npn_info(left[0], right[1], left[1], hfe_rl, right[2])
+        elif left[1] == right[1] and left[0] != right[0]:
+            hre_lr = scan_pnp_hfe(left[1], left[0], right[0])
+            hre_rl = scan_pnp_hfe(left[1], right[0], left[0])
 
-    if left[0] == right[0] and left[1] != right[1]:
-        hfe_lr = scan_npn_hfe(left[0], left[1], right[1])
-        hfe_rl = scan_npn_hfe(left[0], right[1], left[1])
+            if hre_lr > hre_rl:
+                display_pnp_info(left[1], left[0], right[0], hre_lr, left[2])
+            else:
+                display_pnp_info(left[1], right[0], left[0], hre_rl, right[2])
+    else:
+        display.fill(0)
 
-        if hfe_lr > hfe_rl:
-            display_npn_info(left[0], left[1], right[1], hfe_lr, left[2])
-        else:
-            display_npn_info(left[0], right[1], left[1], hfe_rl, right[2])
-    elif left[1] == right[1] and left[0] != right[0]:
-        hre_lr = scan_pnp_hfe(left[1], left[0], right[0])
-        hre_rl = scan_pnp_hfe(left[1], right[0], left[0])
-
-        if hre_lr > hre_rl:
-            display_pnp_info(left[1], left[0], right[0], hre_lr, left[2])
-        else:
-            display_pnp_info(left[1], right[0], left[0], hre_rl, right[2])
-
-display.show()
+    display.show()
+    time.sleep_ms(500)
