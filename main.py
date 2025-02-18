@@ -36,7 +36,6 @@ def display_diode_info(a: Instrument, b: Instrument, vfd: float):
     cathode = b.id if polarity < 0 else a.id
     anode = a.id if polarity < 0 else b.id
 
-    display.fill(0)
     draw_diode(display, 20, 10, polarity, cathode, anode)
     display.text(f"Vfd = {vfd:.2f}V", 20, 45, 1)
     display.show()
@@ -76,20 +75,16 @@ def scan_pnp_hfe(base: Instrument, collector: Instrument, emitter: Instrument):
     return hfe
 
 def display_npn_info(base: Instrument, collector: Instrument, emitter: Instrument, hfe: float, vbe: float):
-    display.fill(0)
     draw_npn(display, 0, 0, collector.id, base.id, emitter.id)
     display.text(f"Type: NPN", 55, 10, 1)
     display.text(f"Hfe: {hfe:.0f}", 55, 25, 1)
     display.text(f"Vbe: {vbe:.2f}V", 55, 40, 1)
-    display.show()
 
 def display_pnp_info(base: Instrument, collector: Instrument, emitter: Instrument, hfe: float, vbe: float):
-    display.fill(0)
     draw_pnp(display, 0, 0, collector.id, base.id, emitter.id)
     display.text(f"Type: PNP", 55, 10, 1)
     display.text(f"Hfe: {hfe:.0f}", 55, 25, 1)
     display.text(f"Vbe: {vbe:.2f}V", 55, 40, 1)
-    display.show()
 
 while True:
     scans = [
@@ -100,7 +95,9 @@ while True:
     diodes = [diode for diode in scans if diode is not None]
     
     if len(diodes) == 1:
+        display.fill(0)
         display_diode_info(diodes[0][0], diodes[0][1], diodes[0][2])
+        display.show()
     elif len(diodes) == 2:
         left, right = diodes
 
@@ -108,20 +105,21 @@ while True:
             hfe_lr = scan_npn_hfe(left[0], left[1], right[1])
             hfe_rl = scan_npn_hfe(left[0], right[1], left[1])
 
+            display.fill(0)
             if hfe_lr > hfe_rl:
                 display_npn_info(left[0], left[1], right[1], hfe_lr, left[2])
             else:
                 display_npn_info(left[0], right[1], left[1], hfe_rl, right[2])
+            display.show()
         elif left[1] == right[1] and left[0] != right[0]:
             hre_lr = scan_pnp_hfe(left[1], left[0], right[0])
             hre_rl = scan_pnp_hfe(left[1], right[0], left[0])
-
+            
+            display.fill(0)
             if hre_lr > hre_rl:
                 display_pnp_info(left[1], left[0], right[0], hre_lr, left[2])
             else:
                 display_pnp_info(left[1], right[0], left[0], hre_rl, right[2])
-    else:
-        display.fill(0)
+            display.show()
 
-    display.show()
     time.sleep_ms(500)
